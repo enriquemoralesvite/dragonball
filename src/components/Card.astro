@@ -1,0 +1,25 @@
+---
+// src/components/Card.astro
+const { dragonball } = Astro.props;
+---
+
+<a href={`/db/${dragonball.id}`}  
+    class="bg-gray-700 rounded-xl shadow hover:scale-105 transition p-4 flex flex-col items-center">
+  <img 
+    src={dragonball.image} 
+    alt={dragonball.name} 
+    class="w-32 h-32 object-contain mb-4 bg-white rounded-full p-1" 
+  />
+  <h2 class="text-lg font-bold capitalize text-white">{dragonball.name}</h2>
+  <div class="flex gap-2 mt-2">
+    <span class="text-xs bg-yellow-400 text-gray-900 px-2 py-1 rounded-full">
+      {dragonball.race}
+    </span>
+    <span class="text-xs bg-blue-400 text-gray-900 px-2 py-1 rounded-full">
+      {dragonball.gender}
+    </span>
+    <span class="text-xs bg-green-400 text-gray-900 px-2 py-1 rounded-full">
+      {dragonball.affiliation}
+    </span>
+  </div>
+</a>

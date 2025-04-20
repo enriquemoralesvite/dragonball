@@ -1,11 +1,51 @@
 ---
-import Welcome from '../components/Welcome.astro';
-import Layout from '../layouts/Layout.astro';
+// src/pages/index.astro
 
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+import Layout from '../layouts/Layout.astro';
+import Card from '../components/Card.astro';
+
+interface Character {
+  id: number;
+  name: string;
+  ki: string;
+  maxKi: string;
+  race: string;
+  gender: string;
+  description: string;
+  image: string;
+  affiliation: string;
+}
+
+const API_URL = 'https://dragonball-api.com/api';
+
+let characters: Character[] = [];
+
+try {
+  const res = await fetch(`${API_URL}/characters?limit=100&page=1`);
+  if (!res.ok) throw new Error(`Error HTTP: ${res.status}`);
+
+  const json = await res.json();
+  console.log('🧪 Respuesta completa:', json);
+
+  characters = Array.isArray(json?.items) ? json.items : [];
+} catch (err) {
+  console.error('❌ Error cargando personajes:', err);
+  characters = [];
+}
 ---
 
-<Layout>
-	<Welcome />
+<Layout title="DragonBall Characters">
+  <p class="text-xs text-gray-400">Total personajes: {Array.isArray(characters) ? characters.length : 'undefined'}</p>
+
+  {Array.isArray(characters) && characters.length > 0 ? (
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      {characters.map((c) => (
+        <Card key={c.id} dragonball={c} />
+      ))}
+    </div>
+  ) : (
+    <p class="text-center text-red-400 mt-10">
+      No hay personajes para mostrar. Revisa la consola para más detalles.
+    </p>
+  )}
 </Layout>
