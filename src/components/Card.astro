@@ -1,25 +1,50 @@
 ---
 // src/components/Card.astro
-const { dragonball } = Astro.props;
+interface Character {
+  id: number;
+  name?: string;
+  race?: string;
+  gender?: string;
+  affiliation?: string;
+  image?: string;
+  avatar?: string;
+  originplanet?: string;
+  status?: string;
+}
+
+const { dragonball } = Astro.props as { dragonball: Character };
+
+// Función auxiliar con tipado fuerte
+function safeGetString(obj: Character, key: keyof Character, defaultValue: string = ''): string {
+  const value = obj[key];
+  return value !== undefined && value !== null ? String(value) : defaultValue;
+}
+
+const name = safeGetString(dragonball, 'name', 'Personaje');
+const image = safeGetString(dragonball, 'image', safeGetString(dragonball, 'avatar', '/favicon.svg'));
+const race = safeGetString(dragonball, 'race', safeGetString(dragonball, 'originplanet', '?'));
+const gender = safeGetString(dragonball, 'gender', '?');
+const affiliation = safeGetString(dragonball, 'affiliation', safeGetString(dragonball, 'status', '?'));
 ---
 
 <a href={`/db/${dragonball.id}`}  
     class="bg-gray-700 rounded-xl shadow hover:scale-105 transition p-4 flex flex-col items-center">
   <img 
-    src={dragonball.image} 
-    alt={dragonball.name} 
+    src={image} 
+    alt={name} 
     class="w-32 h-32 object-contain mb-4 bg-white rounded-full p-1" 
+    onerror="this.onerror=null;this.src='/favicon.svg';"
   />
-  <h2 class="text-lg font-bold capitalize text-white">{dragonball.name}</h2>
-  <div class="flex gap-2 mt-2">
+  <h2 class="text-lg font-bold capitalize text-white">{name}</h2>
+  <div class="flex gap-2 mt-2 flex-wrap justify-center">
     <span class="text-xs bg-yellow-400 text-gray-900 px-2 py-1 rounded-full">
-      {dragonball.race}
+      {race}
     </span>
     <span class="text-xs bg-blue-400 text-gray-900 px-2 py-1 rounded-full">
-      {dragonball.gender}
+      {gender}
     </span>
     <span class="text-xs bg-green-400 text-gray-900 px-2 py-1 rounded-full">
-      {dragonball.affiliation}
+      {affiliation}
     </span>
   </div>
 </a>

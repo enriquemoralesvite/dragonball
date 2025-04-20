@@ -1,65 +1,177 @@
 ---
 import Layout from '../../layouts/Layout.astro';
-export const prerender = true;
 
+// Definición de interfaces con tipado estricto
 interface Character {
   id: number;
   name: string;
-  ki: string;
-  maxKi: string;
-  race: string;
-  gender: string;
-  description: string;
-  image: string;
-  affiliation: string;
+  ki?: string;
+  maxKi?: string;
+  race?: string;
+  gender?: string;
+  description?: string;
+  image?: string;
+  affiliation?: string;
+  avatar?: string;
+  originplanet?: string;
+  status?: string;
+}
+
+interface ApiError {
+  message: string;
 }
 
 const API_URL = 'https://dragonball-api.com/api';
 
+// Es OBLIGATORIO exportar la función getStaticPaths para rutas dinámicas
 export async function getStaticPaths() {
   let characters: Character[] = [];
-
   try {
-    const res = await fetch(`${API_URL}/characters?limit=1000`);
+    // Podemos hacer un fetch de un personaje específico para verificar la estructura
+    console.log('🔍 Verificando estructura de API...');
+    
+    const res = await fetch(`${API_URL}/characters?limit=100&page=1`);
+    if (!res.ok) throw new Error(`Error HTTP: ${res.status}`);
+    
     const data = await res.json();
-    characters = data.items || [];
+    console.log('🔄 Respuesta de API:', typeof data);
+    
+    // Manejar diferentes estructuras de respuesta posibles
+    if (Array.isArray(data)) {
+      characters = data;
+    } else if (data?.items && Array.isArray(data.items)) {
+      characters = data.items;
+    } else if (data?.results && Array.isArray(data.results)) {
+      characters = data.results;
+    } else {
+      console.error('❌ Estructura desconocida:', data);
+      characters = [];
+    }
+    
+    console.log(`🔄 Generando ${characters.length} rutas estáticas`);
   } catch (error) {
-    console.error('❌ Error al cargar los personajes:', error);
+    console.error('❌ Error al cargar todos los personajes:', error);
+    return [];
   }
 
-  return characters.map((character) => ({
-    params: { id: character.id.toString() }, // usar ID numérico como string
+  // Fallback: Si no hay personajes, crea al menos algunas rutas para probar
+  if (characters.length === 0) {
+    return [1, 2, 3, 4, 5, 11].map(id => ({
+      params: { id: id.toString() },
+      props: { id }
+    }));
+  }
+
+  return characters.map(character => ({
+    params: { id: character.id.toString() },
+    props: { preloadedCharacter: character }
   }));
 }
 
+// Obtenemos el ID desde parámetros y cualquier dato precargado
 const { id } = Astro.params;
+const { preloadedCharacter } = Astro.props as { preloadedCharacter?: Character };
 
-let character: Character | null = null;
+// Si no tenemos datos precargados o son incompletos, hacemos fetch
+let character: Character | null = preloadedCharacter || null;
+let error: ApiError | null = null;
 
-try {
-  const res = await fetch(`${API_URL}/characters/${id}`);
-  if (!res.ok) throw new Error(`Error HTTP: ${res.status}`);
-  character = await res.json();
-} catch (error) {
-  console.error('❌ Error al cargar personaje:', error);
+if (!preloadedCharacter) {
+  try {
+    console.log(`🔄 Cargando personaje con ID ${id}...`);
+    const res = await fetch(`${API_URL}/characters/${id}`);
+    if (!res.ok) throw new Error(`Error HTTP: ${res.status}`);
+    
+    character = await res.json();
+    console.log('✅ Personaje cargado:', character);
+  } catch (err) {
+    console.error(`❌ Error al cargar personaje ${id}:`, err);
+    if (err instanceof Error) {
+      error = { message: err.message };
+    } else {
+      error = { message: 'Error desconocido' };
+    }
+  }
 }
+
+// Función auxiliar con tipado fuerte
+function safeGetString(obj: Character | null, key: keyof Character, defaultValue: string = ''): string {
+  if (!obj) return defaultValue;
+  const value = obj[key];
+  return value !== undefined && value !== null ? String(value) : defaultValue;
+}
+
+// Obtener datos con seguridad de tipo
+const characterName = safeGetString(character, 'name', 'Personaje desconocido');
+const characterImage = safeGetString(character, 'image', 
+                       safeGetString(character, 'avatar', '/favicon.svg'));
+const characterRace = safeGetString(character, 'race', 
+                      safeGetString(character, 'originplanet', 'Desconocido'));
+const characterGender = safeGetString(character, 'gender', 'Desconocido');
+const characterAffiliation = safeGetString(character, 'affiliation', 
+                             safeGetString(character, 'status', 'Desconocido'));
+const characterDescription = safeGetString(character, 'description', 'No hay descripción disponible.');
+const characterKi = safeGetString(character, 'ki', 'Desconocido');
+const characterMaxKi = safeGetString(character, 'maxKi', 'Desconocido');
 ---
 
-<Layout title={character?.name ?? 'Personaje no encontrado'}>
+<Layout title={characterName}>
   {character ? (
-    <div class="max-w-3xl mx-auto text-center">
-      <img src={character.image} alt={character.name} class="mx-auto mb-4 rounded-lg shadow-md" />
-      <h1 class="text-3xl font-bold">{character.name}</h1>
-      <p class="mt-2 text-gray-600 italic">{character.description}</p>
-      <div class="mt-4 text-left">
-        <p><strong>Ki:</strong> {character.ki}</p>
-        <p><strong>Max Ki:</strong> {character.maxKi}</p>
-        <p><strong>Raza:</strong> {character.race}</p>
-        <p><strong>Género:</strong> {character.gender}</p>
-        <p><strong>Afiliación:</strong> {character.affiliation}</p>
+    <div class="max-w-3xl mx-auto p-4">
+      <div class="bg-gray-800 rounded-xl p-6 shadow-lg text-center">
+        <img 
+          src={characterImage} 
+          alt={characterName} 
+          class="mx-auto mb-4 w-48 h-48 object-cover rounded-full border-4 border-yellow-500 shadow-lg" 
+          onerror="this.onerror=null;this.src='/favicon.svg';"
+        />
+        <h1 class="text-3xl font-bold text-yellow-400">{characterName}</h1>
+        
+        <div class="flex justify-center gap-2 my-3 flex-wrap">
+          <span class="text-xs bg-yellow-400 text-gray-900 px-2 py-1 rounded-full">
+            {characterRace}
+          </span>
+          <span class="text-xs bg-blue-400 text-gray-900 px-2 py-1 rounded-full">
+            {characterGender}
+          </span>
+          <span class="text-xs bg-green-400 text-gray-900 px-2 py-1 rounded-full">
+            {characterAffiliation}
+          </span>
+        </div>
+        
+        <p class="mt-2 text-gray-300 italic mb-6">{characterDescription}</p>
+        
+        <div class="grid grid-cols-2 gap-4 text-left">
+          <div class="bg-gray-700 p-3 rounded-lg">
+            <p class="font-bold text-yellow-300">Ki:</p>
+            <p>{characterKi}</p>
+          </div>
+          <div class="bg-gray-700 p-3 rounded-lg">
+            <p class="font-bold text-yellow-300">Max Ki:</p>
+            <p>{characterMaxKi}</p>
+          </div>
+          <div class="bg-gray-700 p-3 rounded-lg">
+            <p class="font-bold text-yellow-300">Raza:</p>
+            <p>{characterRace}</p>
+          </div>
+          <div class="bg-gray-700 p-3 rounded-lg">
+            <p class="font-bold text-yellow-300">Género:</p>
+            <p>{characterGender}</p>
+          </div>
+        </div>
+        
+        <a href="/" class="inline-block mt-6 bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded transition">
+          Volver a la lista
+        </a>
       </div>
     </div>
   ) : (
-    <p class="text-center text-red-500 mt-10">Personaje no encontrado.</p>
+    <div class="text-center mt-10 p-6">
+      <p class="text-red-500 text-xl">No se pudo encontrar el personaje con ID: {id}</p>
+      {error && <p class="text-gray-400 mt-2">{error.message}</p>}
+      <a href="/" class="inline-block mt-4 bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded transition">
+        Volver a la lista
+      </a>
+    </div>
   )}
 </Layout>
