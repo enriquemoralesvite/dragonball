@@ -19,6 +19,7 @@ interface Character {
 const API_URL = 'https://dragonball-api.com/api';
 
 let characters: Character[] = [];
+let totalCharacters = 0;
 
 try {
   const res = await fetch(`${API_URL}/characters?limit=100&page=1`);
@@ -28,14 +29,18 @@ try {
   console.log('🧪 Respuesta completa:', json);
 
   characters = Array.isArray(json?.items) ? json.items : [];
+  totalCharacters = typeof json?.total === 'number' ? json.total : characters.length;
 } catch (err) {
   console.error('❌ Error cargando personajes:', err);
   characters = [];
+  totalCharacters = 0;
 }
 ---
 
 <Layout title="DragonBall Characters">
-  <p class="text-xs text-gray-400">Total personajes: {Array.isArray(characters) ? characters.length : 'undefined'}</p>
+  <p class="text-xs text-gray-400">
+    Total personajes: {totalCharacters}
+  </p>
 
   {Array.isArray(characters) && characters.length > 0 ? (
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">

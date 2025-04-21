@@ -1,6 +1,14 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 
+// ...interfaces...
+
+export async function getStaticPaths() {
+  return Array.from({length: 100}, (_, i) => ({
+    params: { id: (i+1).toString() }
+  }));
+}
+
 // Definición de interfaces con tipado estricto
 interface Character {
   id: number;
@@ -23,50 +31,6 @@ interface ApiError {
 
 const API_URL = 'https://dragonball-api.com/api';
 
-// Es OBLIGATORIO exportar la función getStaticPaths para rutas dinámicas
-export async function getStaticPaths() {
-  let characters: Character[] = [];
-  try {
-    // Podemos hacer un fetch de un personaje específico para verificar la estructura
-    console.log('🔍 Verificando estructura de API...');
-    
-    const res = await fetch(`${API_URL}/characters?limit=100&page=1`);
-    if (!res.ok) throw new Error(`Error HTTP: ${res.status}`);
-    
-    const data = await res.json();
-    console.log('🔄 Respuesta de API:', typeof data);
-    
-    // Manejar diferentes estructuras de respuesta posibles
-    if (Array.isArray(data)) {
-      characters = data;
-    } else if (data?.items && Array.isArray(data.items)) {
-      characters = data.items;
-    } else if (data?.results && Array.isArray(data.results)) {
-      characters = data.results;
-    } else {
-      console.error('❌ Estructura desconocida:', data);
-      characters = [];
-    }
-    
-    console.log(`🔄 Generando ${characters.length} rutas estáticas`);
-  } catch (error) {
-    console.error('❌ Error al cargar todos los personajes:', error);
-    return [];
-  }
-
-  // Fallback: Si no hay personajes, crea al menos algunas rutas para probar
-  if (characters.length === 0) {
-    return [1, 2, 3, 4, 5, 11].map(id => ({
-      params: { id: id.toString() },
-      props: { id }
-    }));
-  }
-
-  return characters.map(character => ({
-    params: { id: character.id.toString() },
-    props: { preloadedCharacter: character }
-  }));
-}
 
 // Obtenemos el ID desde parámetros y cualquier dato precargado
 const { id } = Astro.params;
@@ -122,7 +86,7 @@ const characterMaxKi = safeGetString(character, 'maxKi', 'Desconocido');
         <img 
           src={characterImage} 
           alt={characterName} 
-          class="mx-auto mb-4 w-48 h-48 object-cover rounded-full border-4 border-yellow-500 shadow-lg" 
+          class="mx-auto mb-4 w-72 h-72 object-contain rounded-full border-4 border-yellow-500 shadow-lg" 
           onerror="this.onerror=null;this.src='/favicon.svg';"
         />
         <h1 class="text-3xl font-bold text-yellow-400">{characterName}</h1>
