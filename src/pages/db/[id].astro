@@ -79,7 +79,7 @@ const characterKi = safeGetString(character, 'ki', 'Desconocido');
 const characterMaxKi = safeGetString(character, 'maxKi', 'Desconocido');
 ---
 
-<Layout title={characterName}>
+<Layout title={`Ficha de ${characterName}`}>
   {character ? (
     <div class="max-w-3xl mx-auto p-4">
       <div class="bg-gray-800 rounded-xl p-6 shadow-lg text-center">
